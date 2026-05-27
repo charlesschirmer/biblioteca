@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
 gerar_catalogo.py
-Gera automaticamente o arquivo livros/catalogo.json
-a partir dos PDFs encontrados na pasta /livros
+Gera automaticamente livros/catalogo.json e extrai a capa (1ª página)
+de cada PDF como imagem JPG na pasta capas/
+
+Dependência obrigatória para extração de capas:
+  pip install pymupdf
 
 Uso:
   python gerar_catalogo.py                  # escaneia ./livros
   python gerar_catalogo.py --pasta docs     # escaneia ./docs
-
-Dependência opcional para ler metadados reais do PDF:
-  pip install pypdf2          (ou: pip install PyMuPDF)
+  python gerar_catalogo.py --sem-capa       # pula extração de capas
+  python gerar_catalogo.py --recriar-capas  # força recriar todas as capas
 """
 
 import os, json, re, argparse
@@ -18,7 +20,7 @@ from pathlib import Path
 # ── Mapeamento de palavras-chave para categoria ──
 REGRAS_CATEGORIA = [
     (["romance", "conto", "poema", "literatura", "machado", "clarice", "guimarães"], "Literatura"),
-    (["python", "javascript", "java", "código", "código", "software", "clean code", "design pattern", "api", "banco de dados", "programação"], "Tecnologia"),
+    (["python", "javascript", "java", "código", "software", "clean code", "design pattern", "api", "banco de dados", "programação"], "Tecnologia"),
     (["gestão", "administração", "liderança", "estratégia", "empresa", "negócio", "empreend"], "Gestão"),
     (["artigo", "paper", "estudo", "pesquisa", "análise", "revista"], "Artigos"),
     (["manual", "procedimento", "instrução", "norma", "política", "regulamento"], "Documentos"),
@@ -57,35 +59,64 @@ def inferir_categoria(nome_arquivo):
 
 
 def formatar_titulo(nome_arquivo):
-    """Transforma nome do arquivo em título legível."""
     stem = Path(nome_arquivo).stem
-    # remove underscores, hífens extras, números de versão tipo _v2
     stem = re.sub(r'[_\-]+', ' ', stem)
     stem = re.sub(r'\bv\d+(\.\d+)?\b', '', stem, flags=re.IGNORECASE)
     stem = re.sub(r'\s+', ' ', stem).strip()
     return stem.title()
 
 
-def tentar_ler_metadados_pdf(caminho):
-    """Tenta extrair título e autor reais do PDF. Retorna dict ou None."""
-    try:
-        import PyPDF2
-        with open(caminho, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
-            info = reader.metadata
-            titulo = (info.get('/Title') or '').strip()
-            autor  = (info.get('/Author') or '').strip()
-            return {
-                'titulo': titulo if titulo else None,
-                'autor':  autor  if autor  else None,
-            }
-    except Exception:
-        pass
+def extrair_capa(pdf_path: Path, pasta_capas: Path, recriar=False) -> str:
+    """
+    Renderiza a 1ª página do PDF como JPG e salva em pasta_capas/.
+    Retorna o caminho relativo da imagem (para usar no JSON) ou '' em caso de falha.
+    """
+    nome_capa = pasta_capas / (pdf_path.stem + ".jpg")
+    caminho_relativo = str(nome_capa).replace("\\", "/")
+
+    # Já existe e não precisa recriar
+    if nome_capa.exists() and not recriar:
+        print(f"    🖼️  Capa já existe: {nome_capa.name}")
+        return caminho_relativo
 
     try:
         import fitz  # PyMuPDF
-        doc = fitz.open(caminho)
+        pasta_capas.mkdir(parents=True, exist_ok=True)
+
+        doc = fitz.open(str(pdf_path))
+        pagina = doc[0]  # primeira página
+
+        # Renderiza em 150 DPI — bom equilíbrio entre qualidade e tamanho
+        mat = fitz.Matrix(150 / 72, 150 / 72)
+        pix = pagina.get_pixmap(matrix=mat)
+
+        # Recorta proporção de capa de livro (2:3) centralizada
+        w, h = pix.width, pix.height
+        alvo_h = int(w * 1.5)  # proporção 2:3
+        if alvo_h < h:
+            # PDF mais alto que 2:3 — recorta verticalmente pelo topo
+            pix = pagina.get_pixmap(matrix=mat, clip=fitz.Rect(0, 0, w * 72/150, alvo_h * 72/150))
+
+        pix.save(str(nome_capa))
+        doc.close()
+        print(f"    🖼️  Capa extraída: {nome_capa.name} ({pix.width}×{pix.height}px)")
+        return caminho_relativo
+
+    except ImportError:
+        print("    ⚠️  PyMuPDF não instalado. Rode: pip install pymupdf")
+        return ""
+    except Exception as e:
+        print(f"    ❌ Erro ao extrair capa de {pdf_path.name}: {e}")
+        return ""
+
+
+def tentar_ler_metadados_pdf(caminho):
+    """Tenta extrair título e autor reais do PDF usando PyMuPDF."""
+    try:
+        import fitz
+        doc = fitz.open(str(caminho))
         meta = doc.metadata
+        doc.close()
         titulo = (meta.get('title') or '').strip()
         autor  = (meta.get('author') or '').strip()
         return {
@@ -94,20 +125,48 @@ def tentar_ler_metadados_pdf(caminho):
         }
     except Exception:
         pass
-
     return None
 
 
-def gerar_catalogo(pasta: str, saida: str, base_path: str = "livros"):
+def injetar_no_html(catalogo: list, html_path: str = "index.html"):
+    """
+    Injeta o catálogo diretamente no index.html entre as marcações
+    // CATALOGO_INICIO e // CATALOGO_FIM — sem necessidade de servidor.
+    """
+    html_file = Path(html_path)
+    if not html_file.exists():
+        print(f"  ⚠️  {html_path} não encontrado — pulando injeção no HTML.")
+        return
+
+    conteudo = html_file.read_text(encoding='utf-8')
+
+    json_str = json.dumps(catalogo, ensure_ascii=False, indent=2)
+    novo_bloco = f"// CATALOGO_INICIO\nconst CATALOGO_DADOS = {json_str};\n// CATALOGO_FIM"
+
+    import re
+    padrao = r'// CATALOGO_INICIO.*?// CATALOGO_FIM'
+    if not re.search(padrao, conteudo, re.DOTALL):
+        print(f"  ⚠️  Marcações CATALOGO_INICIO/FIM não encontradas em {html_path}.")
+        return
+
+    novo_conteudo = re.sub(padrao, novo_bloco, conteudo, flags=re.DOTALL)
+    html_file.write_text(novo_conteudo, encoding='utf-8')
+    print(f"  💉 Catálogo injetado em {html_path} ({len(catalogo)} itens)")
+
+
+def gerar_catalogo(pasta: str, saida: str, sem_capa: bool = False, recriar_capas: bool = False):
     pasta_path = Path(pasta)
     if not pasta_path.exists():
         print(f"❌ Pasta '{pasta}' não encontrada.")
         return
 
+    # Pasta de capas fica na raiz do projeto (ao lado de index.html)
+    pasta_capas = Path("capas")
+
     pdfs = sorted(pasta_path.glob("**/*.pdf"))
     print(f"📂 Encontrados {len(pdfs)} PDFs em '{pasta}'")
 
-    # Tenta carregar catálogo existente para preservar edições manuais
+    # Carrega catálogo existente para preservar edições manuais
     existente = {}
     saida_path = Path(saida)
     if saida_path.exists():
@@ -115,28 +174,35 @@ def gerar_catalogo(pasta: str, saida: str, base_path: str = "livros"):
             with open(saida_path, encoding='utf-8') as f:
                 for item in json.load(f):
                     existente[item.get('arquivo', '')] = item
-            print(f"📋 Catálogo existente carregado ({len(existente)} itens)")
+            print(f"📋 Catálogo existente: {len(existente)} itens")
         except Exception:
             pass
 
     catalogo = []
     for pdf in pdfs:
-        # Caminho relativo usado na URL
         rel = str(pdf.relative_to(pasta_path.parent)).replace("\\", "/")
         chave = rel
 
+        # ── PDF já no catálogo ──
         if chave in existente:
-            # Preserva item existente (o usuário pode ter editado título/autor/desc)
-            catalogo.append(existente[chave])
-            print(f"  ✏️  Mantido (já existe): {pdf.name}")
+            item = existente[chave]
+            # Regenera capa se pedido ou se estava vazia
+            if not sem_capa and (recriar_capas or not item.get('capa')):
+                item['capa'] = extrair_capa(pdf, pasta_capas, recriar=recriar_capas)
+            catalogo.append(item)
+            print(f"  ✏️  Mantido: {pdf.name}")
             continue
 
-        # Novo arquivo — inferir tudo
+        # ── PDF novo ──
         meta = tentar_ler_metadados_pdf(pdf)
-        titulo = (meta and meta['titulo']) or formatar_titulo(pdf.name)
-        autor  = (meta and meta['autor'])  or ""
+        titulo    = (meta and meta['titulo']) or formatar_titulo(pdf.name)
+        autor     = (meta and meta['autor'])  or ""
         categoria = inferir_categoria(pdf.name)
-        cor = CORES_POR_CATEGORIA.get(categoria, "#c9a84c")
+        cor       = CORES_POR_CATEGORIA.get(categoria, "#c9a84c")
+
+        capa = ""
+        if not sem_capa:
+            capa = extrair_capa(pdf, pasta_capas)
 
         item = {
             "arquivo":   chave,
@@ -144,25 +210,37 @@ def gerar_catalogo(pasta: str, saida: str, base_path: str = "livros"):
             "autor":     autor,
             "categoria": categoria,
             "descricao": "",
-            "capa":      "",
+            "capa":      capa,
             "cor":       cor
         }
         catalogo.append(item)
         print(f"  ➕ Adicionado: {pdf.name} → [{categoria}] {titulo}")
 
-    # Salva
+    # Salva JSON
     saida_path.parent.mkdir(parents=True, exist_ok=True)
     with open(saida_path, 'w', encoding='utf-8') as f:
         json.dump(catalogo, f, ensure_ascii=False, indent=2)
 
-    print(f"\n✅ Catálogo salvo em '{saida}' com {len(catalogo)} documentos.")
-    print("💡 Edite o JSON para adicionar descrições, capas e ajustar categorias.")
+    # Injeta no index.html — funciona sem servidor
+    injetar_no_html(catalogo)
+
+    total_capas = sum(1 for i in catalogo if i.get('capa'))
+    print(f"\n✅ Concluído!")
+    print(f"   📚 {len(catalogo)} documentos no catálogo")
+    print(f"   🖼️  {total_capas} capas geradas")
+    print(f"   📄 JSON salvo em: {saida}")
+    print(f"   💉 Catálogo injetado em: index.html")
+    if not sem_capa:
+        print(f"   🗂️  Capas salvas em: capas/")
+    print(f"\n   Abra index.html diretamente no navegador — sem servidor necessário!")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Gera catalogo.json para a Biblioteca Virtual")
-    parser.add_argument("--pasta", default="livros", help="Pasta com os PDFs (padrão: livros)")
-    parser.add_argument("--saida", default="livros/catalogo.json", help="Arquivo de saída")
+    parser = argparse.ArgumentParser(description="Gera catalogo.json com capas extraídas dos PDFs")
+    parser.add_argument("--pasta",         default="livros",             help="Pasta com os PDFs")
+    parser.add_argument("--saida",         default="livros/catalogo.json", help="Arquivo de saída")
+    parser.add_argument("--sem-capa",      action="store_true",          help="Pula extração de capas")
+    parser.add_argument("--recriar-capas", action="store_true",          help="Recria todas as capas mesmo as existentes")
     args = parser.parse_args()
 
-    gerar_catalogo(args.pasta, args.saida)
+    gerar_catalogo(args.pasta, args.saida, args.sem_capa, args.recriar_capas)
