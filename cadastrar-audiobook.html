@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastrar AudioBook — Líder Leitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#141414; --surface:#1e1e1e; --border:#2e2e2e; --border-hi:#3d3d3d;
+  --gold:#e8a020; --gold-dim:rgba(232,160,32,0.12); --gold-glow:rgba(232,160,32,0.28);
+  --red:#e03030; --red-dim:rgba(224,48,48,0.1);
+  --text:#f0ece4; --muted:#8a8070; --light:#5a5248;
+  --green:#22c55e; --green-dim:rgba(34,197,94,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;}
+
+.header{width:100%;max-width:640px;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--gold);letter-spacing:.04em;text-transform:uppercase;}
+.logo span{color:var(--text);font-weight:400;}
+.back-btn{font-size:.8rem;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .15s;}
+.back-btn:hover{color:var(--gold);}
+
+.card{width:100%;max-width:640px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;}
+
+.card-header{
+  background:linear-gradient(135deg,#0a0a0a,#1a0a0a,#200505);
+  border-bottom:1px solid var(--border);
+  padding:1.5rem 2rem;
+  position:relative;
+}
+.card-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),#ff6060,var(--red));}
+.card-header h1{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;display:flex;align-items:center;gap:.6rem;}
+.card-header p{font-size:.82rem;color:var(--muted);margin-top:.4rem;}
+
+.card-body{padding:2rem;}
+
+.form-group{margin-bottom:1.4rem;}
+label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem;}
+input,textarea,select{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:8px;padding:10px 14px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:.9rem;color:var(--text);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--red);box-shadow:0 0 0 3px var(--red-dim);}
+input::placeholder,textarea::placeholder{color:var(--light);}
+textarea{resize:vertical;min-height:80px;}
+select option{background:var(--surface);}
+
+.yt-preview{
+  margin-top:.75rem;
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:.75rem 1rem;
+  display:none;align-items:center;gap:.75rem;
+  font-size:.82rem;
+}
+.yt-preview.visible{display:flex;}
+.yt-thumb{width:60px;height:45px;border-radius:4px;object-fit:cover;flex-shrink:0;}
+.yt-info{flex:1;min-width:0;}
+.yt-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-url{color:var(--muted);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-ok{color:var(--green);font-size:.8rem;display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;}
+
+.capa-preview{
+  margin-top:.75rem;
+  width:80px;height:110px;border-radius:6px;overflow:hidden;
+  background:var(--bg);border:1px solid var(--border);
+  display:none;align-items:center;justify-content:center;
+}
+.capa-preview.visible{display:flex;}
+.capa-preview img{width:100%;height:100%;object-fit:cover;}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
+.btn-gerar{
+  width:100%;background:linear-gradient(135deg,var(--red),#ff5050);
+  color:#fff;border:none;border-radius:10px;padding:13px;
+  font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:.95rem;
+  cursor:pointer;transition:opacity .15s,transform .15s;
+  letter-spacing:.03em;margin-top:.5rem;
+}
+.btn-gerar:hover{opacity:.9;transform:translateY(-1px);}
+
+/* Resultado */
+.resultado{
+  width:100%;max-width:640px;margin-top:1.5rem;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:16px;
+  overflow:hidden;display:none;
+}
+.resultado.visible{display:block;}
+.resultado-header{
+  background:var(--green-dim);border-bottom:1px solid var(--border);
+  padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;
+}
+.resultado-header span{font-weight:600;font-size:.9rem;color:var(--green);display:flex;align-items:center;gap:.5rem;}
+.btn-copiar{
+  background:var(--green);color:#000;border:none;border-radius:7px;
+  padding:7px 18px;font-family:'IBM Plex Sans',sans-serif;font-weight:700;
+  font-size:.8rem;cursor:pointer;transition:opacity .15s;
+}
+.btn-copiar:hover{opacity:.85;}
+.btn-copiar.copiado{background:#16a34a;color:#fff;}
+pre{
+  padding:1.5rem;font-size:.8rem;color:#a0f0a0;
+  line-height:1.7;overflow-x:auto;font-family:'IBM Plex Mono',monospace;
+  background:#0a120a;
+}
+
+.instrucoes{
+  width:100%;max-width:640px;margin-top:1.5rem;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:12px;
+  padding:1.25rem 1.5rem;font-size:.82rem;color:var(--muted);line-height:1.7;
+}
+.instrucoes strong{color:var(--text);}
+.instrucoes code{background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--gold);font-size:.78rem;}
+.step{display:flex;gap:.75rem;margin-bottom:.6rem;align-items:flex-start;}
+.step-num{background:var(--gold-dim);color:var(--gold);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Líder <span>Leitor</span></div>
+  <a href="index.html" class="back-btn">← Voltar à biblioteca</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h1>🎧 Cadastrar AudioBook</h1>
+    <p>Preencha os dados e copie a entrada gerada para o <code>catalogo.json</code></p>
+  </div>
+  <div class="card-body">
+
+    <div class="form-group">
+      <label>Link do YouTube *</label>
+      <input type="url" id="youtube" placeholder="https://www.youtube.com/watch?v=..." oninput="onYtChange()">
+      <div class="yt-preview" id="yt-preview">
+        <img class="yt-thumb" id="yt-thumb" src="" alt="">
+        <div class="yt-info">
+          <div class="yt-title" id="yt-title">Link detectado</div>
+          <div class="yt-url" id="yt-url"></div>
+        </div>
+        <div class="yt-ok">✓ OK</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Título *</label>
+        <input type="text" id="titulo" placeholder="Ex: A Arte da Guerra">
+      </div>
+      <div class="form-group">
+        <label>Autor</label>
+        <input type="text" id="autor" placeholder="Ex: Sun Tzu">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="categoria">
+          <option value="Livros">Livros</option>
+          <option value="Gestão">Gestão</option>
+          <option value="Literatura">Literatura</option>
+          <option value="Tecnologia">Tecnologia</option>
+          <option value="Educação">Educação</option>
+          <option value="Filosofia">Filosofia</option>
+          <option value="História">História</option>
+          <option value="Economia">Economia</option>
+          <option value="Engenharia">Engenharia</option>
+          <option value="Direito">Direito</option>
+          <option value="Medicina">Medicina</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cor da lombada</label>
+        <input type="color" id="cor" value="#e8a020" style="height:44px;padding:4px 8px;cursor:pointer;">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>URL da capa (opcional)</label>
+      <input type="url" id="capa" placeholder="https://... ou capas/nome-do-livro.jpg" oninput="onCapaChange()">
+      <div class="capa-preview" id="capa-preview">
+        <img id="capa-img" src="" alt="Capa">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Descrição (opcional)</label>
+      <textarea id="descricao" placeholder="Breve sinopse ou descrição do audiobook…"></textarea>
+    </div>
+
+    <button class="btn-gerar" onclick="gerar()">🎧 Gerar entrada JSON</button>
+  </div>
+</div>
+
+<!-- Resultado -->
+<div class="resultado" id="resultado">
+  <div class="resultado-header">
+    <span>✅ Entrada gerada — copie e cole no catalogo.json</span>
+    <button class="btn-copiar" id="btn-copiar" onclick="copiar()">📋 Copiar</button>
+  </div>
+  <pre id="json-output"></pre>
+</div>
+
+<!-- Instruções -->
+<div class="instrucoes">
+  <strong>Como usar:</strong>
+  <div class="step"><div class="step-num">1</div><div>Preencha os dados do audiobook acima e clique em <strong>Gerar entrada JSON</strong></div></div>
+  <div class="step"><div class="step-num">2</div><div>Clique em <strong>Copiar</strong> para copiar o JSON gerado</div></div>
+  <div class="step"><div class="step-num">3</div><div>Abra o arquivo <code>livros/catalogo.json</code> e cole antes do último <code>]</code>, separando por vírgula</div></div>
+  <div class="step"><div class="step-num">4</div><div>Rode <code>python gerar_catalogo.py</code> — o script preserva os audiobooks automaticamente</div></div>
+</div>
+
+<script>
+function extrairVideoId(url) {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function onYtChange() {
+  const url = document.getElementById('youtube').value.trim();
+  const vid = extrairVideoId(url);
+  const preview = document.getElementById('yt-preview');
+  if (vid) {
+    document.getElementById('yt-thumb').src = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+    document.getElementById('yt-title').textContent = 'Vídeo detectado — ID: ' + vid;
+    document.getElementById('yt-url').textContent = url;
+    preview.classList.add('visible');
+  } else {
+    preview.classList.remove('visible');
+  }
+}
+
+function onCapaChange() {
+  const url = document.getElementById('capa').value.trim();
+  const preview = document.getElementById('capa-preview');
+  const img = document.getElementById('capa-img');
+  if (url) {
+    img.src = url;
+    img.onload = () => preview.classList.add('visible');
+    img.onerror = () => preview.classList.remove('visible');
+  } else {
+    preview.classList.remove('visible');
+  }
+}
+
+function gerar() {
+  const titulo = document.getElementById('titulo').value.trim();
+  const youtube = document.getElementById('youtube').value.trim();
+
+  if (!titulo) { alert('Preencha o título do audiobook.'); return; }
+  if (!youtube) { alert('Preencha o link do YouTube.'); return; }
+  if (!extrairVideoId(youtube)) { alert('Link do YouTube inválido.'); return; }
+
+  const entry = {
+    tipo: "audiobook",
+    arquivo: "",
+    titulo: titulo,
+    autor: document.getElementById('autor').value.trim(),
+    categoria: document.getElementById('categoria').value,
+    descricao: document.getElementById('descricao').value.trim(),
+    capa: document.getElementById('capa').value.trim(),
+    cor: document.getElementById('cor').value,
+    youtube: youtube
+  };
+
+  const json = JSON.stringify(entry, null, 2);
+  document.getElementById('json-output').textContent = json;
+  document.getElementById('resultado').classList.add('visible');
+  document.getElementById('btn-copiar').textContent = '📋 Copiar';
+  document.getElementById('btn-copiar').classList.remove('copiado');
+  document.getElementById('resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copiar() {
+  const text = document.getElementById('json-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btn-copiar');
+    btn.textContent = '✅ Copiado!';
+    btn.classList.add('copiado');
+    setTimeout(() => { btn.textContent = '📋 Copiar'; btn.classList.remove('copiado'); }, 2500);
+  });
+}
+</script>
+</body>
+</html>
