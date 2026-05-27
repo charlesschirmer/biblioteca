@@ -1,0 +1,35 @@
+name: Atualizar Catálogo
+
+on:
+  push:
+    paths:
+      - 'livros/**.pdf'   # dispara quando um PDF é adicionado ou removido
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências (opcional — lê metadados reais do PDF)
+        run: pip install PyPDF2 || true
+
+      - name: Rodar script de catálogo
+        run: python gerar_catalogo.py
+
+      - name: Commit do catálogo atualizado
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add livros/catalogo.json
+          git diff --cached --quiet || git commit -m "🤖 Atualiza catalogo.json"
+          git push
