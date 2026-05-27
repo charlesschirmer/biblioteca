@@ -168,13 +168,17 @@ def gerar_catalogo(pasta: str, saida: str, sem_capa: bool = False, recriar_capas
 
     # Carrega catálogo existente para preservar edições manuais
     existente = {}
+    audiobooks = []  # audiobooks não têm PDF — preservar sempre
     saida_path = Path(saida)
     if saida_path.exists():
         try:
-            with open(saida_path, encoding='utf-8') as f:
-                for item in json.load(f):
+            todos = json.load(open(saida_path, encoding='utf-8'))
+            for item in todos:
+                if item.get('tipo') == 'audiobook':
+                    audiobooks.append(item)  # preserva separado
+                else:
                     existente[item.get('arquivo', '')] = item
-            print(f"📋 Catálogo existente: {len(existente)} itens")
+            print(f"📋 Catálogo existente: {len(existente)} livros + {len(audiobooks)} audiobooks")
         except Exception:
             pass
 
@@ -198,23 +202,33 @@ def gerar_catalogo(pasta: str, saida: str, sem_capa: bool = False, recriar_capas
         titulo    = (meta and meta['titulo']) or formatar_titulo(pdf.name)
         autor     = (meta and meta['autor'])  or ""
         categoria = inferir_categoria(pdf.name)
-        cor       = CORES_POR_CATEGORIA.get(categoria, "#c9a84c")
+        # PDFs sem categoria específica viram "Livros" em vez de "Documentos"
+        if categoria == "Documentos":
+            categoria = "Livros"
+        cor = CORES_POR_CATEGORIA.get(categoria, "#e8a020")
 
         capa = ""
         if not sem_capa:
             capa = extrair_capa(pdf, pasta_capas)
 
         item = {
+            "tipo":      "livro",
             "arquivo":   chave,
             "titulo":    titulo,
             "autor":     autor,
             "categoria": categoria,
             "descricao": "",
             "capa":      capa,
-            "cor":       cor
+            "cor":       cor,
+            "youtube":   ""
         }
         catalogo.append(item)
         print(f"  ➕ Adicionado: {pdf.name} → [{categoria}] {titulo}")
+
+    # Reincorporar audiobooks preservados
+    catalogo = catalogo + audiobooks
+    if audiobooks:
+        print(f"  🎧 {len(audiobooks)} audiobook(s) preservado(s)")
 
     # Salva JSON
     saida_path.parent.mkdir(parents=True, exist_ok=True)
