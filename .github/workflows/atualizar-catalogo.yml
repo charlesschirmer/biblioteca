@@ -20,16 +20,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependências (opcional — lê metadados reais do PDF)
-        run: pip install PyPDF2 || true
+      - name: Instalar PyMuPDF (extração de capas)
+        run: pip install pymupdf
 
       - name: Rodar script de catálogo
         run: python gerar_catalogo.py
 
-      - name: Commit do catálogo atualizado
+      - name: Commit do catálogo, capas e index
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add livros/catalogo.json
-          git diff --cached --quiet || git commit -m "🤖 Atualiza catalogo.json"
+          git add livros/catalogo.json capas/ index.html
+          git diff --cached --quiet || git commit -m "🤖 Atualiza catálogo, capas e index.html"
           git push
