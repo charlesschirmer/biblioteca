@@ -1,137 +1,189 @@
 [
   {
+    "tipo": "livro",
     "arquivo": "livros/A Arte da Guerra.pdf",
     "titulo": "Capitulo I – Estimativa",
     "autor": "sefaz",
     "categoria": "História",
     "descricao": "",
     "capa": "capas/A Arte da Guerra.jpg",
-    "cor": "#A07040"
+    "cor": "#A07040",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/As Armas da Persuasao.pdf",
     "titulo": "As Armas da Persuasão",
     "autor": "Robert B. Cialdini",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/As Armas da Persuasao.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Como Evitar Preocupações e Começar a Viver.pdf",
     "titulo": "Como Evitar Preocupações E Começar A Viver",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Como Evitar Preocupações e Começar a Viver.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Como Fazer Amigos e Influênciar Pessoas.pdf",
     "titulo": "Como Fazer Amigos E Influênciar Pessoas",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Como Fazer Amigos e Influênciar Pessoas.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Erros e dicas para vender servicos.pdf",
     "titulo": "Mais que um Negócio,      a Profissão dos seus Sonhos",
     "autor": "MElina Kunifas",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Erros e dicas para vender servicos.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Gerente Minuto.pdf",
-    "titulo": "Gerente Minuto",
+    "titulo": "Microsoft Word - 55500481.docx",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Gerente Minuto.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Mais Esperto que o Diabo.pdf",
     "titulo": "Mais Esperto que o Diabo",
     "autor": "Napoleon Hill",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Mais Esperto que o Diabo.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/O Evangelho Segundo o Espiritismo.pdf",
     "titulo": "O Evangelho Segundo Espiritismo",
     "autor": "Allan Kardec",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/O Evangelho Segundo o Espiritismo.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/O Monge e o Executivo - James C. Hunter.pdf",
     "titulo": "O Monge E O Executivo James C. Hunter",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/O Monge e o Executivo - James C. Hunter.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/O Segredo de Luiza.pdf",
     "titulo": "Microsoft Word - Fernando Dolabela - O Segredo de Luísa.doc",
     "autor": "Denize",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/O Segredo de Luiza.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/O Vendedor de Sonhos.pdf",
     "titulo": "O Vendedor De Sonhos",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/O Vendedor de Sonhos.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Os 7 Habitos das Pessoas Muito Eficazes - Stephen R. Covey.pdf",
     "titulo": "OS SETE HÁBITOS DAS PESSOAS MUITO EFICAZES",
     "autor": "Tia",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Os 7 Habitos das Pessoas Muito Eficazes - Stephen R. Covey.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Os Segredos dos Lideres de Sucesso.pdf",
     "titulo": "Os Segredos Dos Lideres De Sucesso",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Os Segredos dos Lideres de Sucesso.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Quem mexeu no meu queijo.pdf",
     "titulo": "Quem Mexeu No Meu Queijo",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Quem mexeu no meu queijo.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
   },
   {
+    "tipo": "livro",
     "arquivo": "livros/Seja Lider de Si Mesmo.pdf",
     "titulo": "Seja Lider De Si Mesmo",
     "autor": "",
-    "categoria": "Documentos",
+    "categoria": "Livros",
     "descricao": "",
     "capa": "capas/Seja Lider de Si Mesmo.jpg",
-    "cor": "#708090"
+    "cor": "#e8a020",
+    "youtube": ""
+  },
+  {
+    "tipo": "audiobook",
+    "arquivo": "",
+    "titulo": "7 Lições de Negócios de La Casa de Papel",
+    "autor": "",
+    "categoria": "Livros",
+    "descricao": "",
+    "capa": "https://m.media-amazon.com/images/I/61Pj39C0npL._SY466_.jpg",
+    "cor": "#e8a020",
+    "youtube": "https://www.youtube.com/watch?v=A2jLUWP3_vQ"
+  },
+  {
+    "tipo": "audiobook",
+    "arquivo": "",
+    "titulo": "O Livro dos Espiritas",
+    "autor": "",
+    "categoria": "Livros",
+    "descricao": "",
+    "capa": "https://m.media-amazon.com/images/I/71AwA0+SQ+L._SY425_.jpg",
+    "cor": "#e8a020",
+    "youtube": "https://www.youtube.com/watch?v=KCsPYMFl_WY&t=20058s"
   }
 ]
