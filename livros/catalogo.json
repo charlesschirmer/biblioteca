@@ -43,5 +43,77 @@
     "descricao": "",
     "capa": "capas/Erros e dicas para vender servicos.jpg",
     "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/O Evangelho Segundo o Espiritismo.pdf",
+    "titulo": "O Evangelho Segundo O Espiritismo",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/O Monge e o Executivo - James C. Hunter.pdf",
+    "titulo": "O Monge E O Executivo James C. Hunter",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/O Segredo de Luiza.pdf",
+    "titulo": "Microsoft Word - Fernando Dolabela - O Segredo de Luísa.doc",
+    "autor": "Denize",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/O Vendedor de Sonhos.pdf",
+    "titulo": "O Vendedor De Sonhos",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/Os 7 Habitos das Pessoas Muito Eficazes - Stephen R. Covey.pdf",
+    "titulo": "OS SETE HÁBITOS DAS PESSOAS MUITO EFICAZES",
+    "autor": "Tia",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/Os Segredos dos Lideres de Sucesso.pdf",
+    "titulo": "Os Segredos Dos Lideres De Sucesso",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/Quem mexeu no meu queijo.pdf",
+    "titulo": "Quem Mexeu No Meu Queijo",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
+  },
+  {
+    "arquivo": "livros/Seja Lider de Si Mesmo.pdf",
+    "titulo": "Seja Lider De Si Mesmo",
+    "autor": "",
+    "categoria": "Documentos",
+    "descricao": "",
+    "capa": "",
+    "cor": "#708090"
   }
 ]
