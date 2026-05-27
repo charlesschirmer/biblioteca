@@ -46,20 +46,20 @@
   },
   {
     "arquivo": "livros/Gerente Minuto.pdf",
-    "titulo": "Microsoft Word - 55500481.docx",
+    "titulo": "Gerente Minuto",
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/Gerente Minuto.jpg",
     "cor": "#708090"
   },
   {
     "arquivo": "livros/O Evangelho Segundo o Espiritismo.pdf",
-    "titulo": "O Evangelho Segundo O Espiritismo",
-    "autor": "",
+    "titulo": "O Evangelho Segundo Espiritismo",
+    "autor": "Allan Kardec",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/O Evangelho Segundo o Espiritismo.jpg",
     "cor": "#708090"
   },
   {
@@ -68,7 +68,7 @@
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/O Monge e o Executivo - James C. Hunter.jpg",
     "cor": "#708090"
   },
   {
@@ -77,7 +77,7 @@
     "autor": "Denize",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/O Segredo de Luiza.jpg",
     "cor": "#708090"
   },
   {
@@ -86,7 +86,7 @@
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/O Vendedor de Sonhos.jpg",
     "cor": "#708090"
   },
   {
@@ -95,7 +95,7 @@
     "autor": "Tia",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/Os 7 Habitos das Pessoas Muito Eficazes - Stephen R. Covey.jpg",
     "cor": "#708090"
   },
   {
@@ -104,7 +104,7 @@
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/Os Segredos dos Lideres de Sucesso.jpg",
     "cor": "#708090"
   },
   {
@@ -113,7 +113,7 @@
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/Quem mexeu no meu queijo.jpg",
     "cor": "#708090"
   },
   {
@@ -122,7 +122,7 @@
     "autor": "",
     "categoria": "Documentos",
     "descricao": "",
-    "capa": "",
+    "capa": "capas/Seja Lider de Si Mesmo.jpg",
     "cor": "#708090"
   }
 ]
