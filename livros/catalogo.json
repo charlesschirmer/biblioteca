@@ -12,6 +12,17 @@
   },
   {
     "tipo": "livro",
+    "arquivo": "livros/Arrume a Sua Cama.pdf",
+    "titulo": "Arrume Sua Cama",
+    "autor": "William H. McRaven",
+    "categoria": "Livros",
+    "descricao": "",
+    "capa": "capas/Arrume a Sua Cama.jpg",
+    "cor": "#e8a020",
+    "youtube": ""
+  },
+  {
+    "tipo": "livro",
     "arquivo": "livros/As Armas da Persuasao.pdf",
     "titulo": "As Armas da Persuasão",
     "autor": "Robert B. Cialdini",
