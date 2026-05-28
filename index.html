@@ -575,9 +575,7 @@ body.list-mode .books-list{display:flex;}
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  CATÁLOGO — injetado pelo gerar_catalogo.py
-// ══════════════════════════════════════════════
+// CATÁLOGO — injetado pelo gerar_catalogo.py
 // CATALOGO_INICIO
 const CATALOGO_DADOS = [
   {
@@ -825,49 +823,52 @@ const CATALOGO_DADOS = [
 ];
 // CATALOGO_FIM
 
+// ══ ESTADO ══
 let catalogo = [], tabAtiva = 'livros';
 let filtros = { livros: 'all', audio: 'all' };
 let busca = '';
 
+// ══ INIT ══
 function init() {
   catalogo = CATALOGO_DADOS;
   const livros = catalogo.filter(b => b.tipo !== 'audiobook');
   const audios  = catalogo.filter(b => b.tipo === 'audiobook');
-
   document.getElementById('count').textContent       = catalogo.length;
   document.getElementById('hero-livros').textContent  = livros.length;
   document.getElementById('hero-audio').textContent   = audios.length;
   document.getElementById('badge-livros').textContent = livros.length;
   document.getElementById('badge-audio').textContent  = audios.length;
-
   buildFilters('livros', livros);
   buildFilters('audio',  audios);
   render('livros');
   render('audio');
 }
 
-// ── ABAS ──
+// ══ ABAS ══
 function setTab(tab) {
   tabAtiva = tab;
-  document.getElementById('section-livros').classList.toggle('active', tab==='livros');
-  document.getElementById('section-audiobooks').classList.toggle('active', tab==='audiobooks');
-  const tL = document.getElementById('tab-livros');
-  const tA = document.getElementById('tab-audio');
-  tL.className = 'main-tab' + (tab==='livros' ? ' active-livros' : '');
-  tA.className = 'main-tab' + (tab==='audiobooks' ? ' active-audiobooks' : '');
+  document.getElementById('section-livros').classList.toggle('active', tab === 'livros');
+  document.getElementById('section-audiobooks').classList.toggle('active', tab === 'audiobooks');
+  document.getElementById('tab-livros').className = 'main-tab' + (tab === 'livros' ? ' active-livros' : '');
+  document.getElementById('tab-audio').className  = 'main-tab' + (tab === 'audiobooks' ? ' active-audiobooks' : '');
 }
 
-// ── FILTROS ──
+// ══ FILTROS ══
 function buildFilters(tipo, items) {
-  const cats = [...new Set(items.map(b => b.categoria).filter(Boolean))].sort();
+  const cats  = [...new Set(items.map(b => b.categoria).filter(Boolean))].sort();
   const barId = tipo === 'livros' ? 'filters-livros' : 'filters-audio';
   const cls   = tipo === 'audio'  ? ' filter-btn-audio' : '';
   const bar   = document.getElementById(barId);
-  bar.innerHTML = `<button class="filter-btn${cls} active" data-cat="all" onclick="setFilter('${tipo}','all',this)">Todos</button>`;
+  bar.innerHTML = '';
+  const btnAll = document.createElement('button');
+  btnAll.className = 'filter-btn' + cls + ' active';
+  btnAll.textContent = 'Todos';
+  btnAll.onclick = () => setFilter(tipo, 'all', btnAll);
+  bar.appendChild(btnAll);
   cats.forEach(cat => {
     const btn = document.createElement('button');
-    btn.className = `filter-btn${cls}`;
-    btn.dataset.cat = cat; btn.textContent = cat;
+    btn.className = 'filter-btn' + cls;
+    btn.textContent = cat;
     btn.onclick = () => setFilter(tipo, cat, btn);
     bar.appendChild(btn);
   });
@@ -876,132 +877,136 @@ function buildFilters(tipo, items) {
 function setFilter(tipo, cat, el) {
   filtros[tipo] = cat;
   const barId = tipo === 'livros' ? 'filters-livros' : 'filters-audio';
-  document.querySelectorAll(`#${barId} .filter-btn`).forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#' + barId + ' .filter-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   render(tipo);
 }
 
-// ── RENDER ──
+// ══ DADOS FILTRADOS ══
 function getFiltered(tipo) {
   const isAudio = tipo === 'audio';
-  const base = catalogo.filter(b => isAudio ? b.tipo==='audiobook' : b.tipo!=='audiobook');
-  const cat  = filtros[tipo];
+  const base = catalogo.filter(b => isAudio ? b.tipo === 'audiobook' : b.tipo !== 'audiobook');
+  const cat  = filtros[tipo] || 'all';
   const q    = busca.toLowerCase();
   return base.filter(b => {
-    const matchCat = cat==='all' || b.categoria===cat;
-    const matchQ   = !q || (b.titulo||'').toLowerCase().includes(q) || (b.autor||'').toLowerCase().includes(q);
+    const matchCat = cat === 'all' || b.categoria === cat;
+    const matchQ   = !q ||
+      (b.titulo  || '').toLowerCase().includes(q) ||
+      (b.autor   || '').toLowerCase().includes(q);
     return matchCat && matchQ;
   });
 }
 
+// ══ RENDER ══
 function render(tipo) {
-  const books  = getFiltered(tipo);
+  const books   = getFiltered(tipo);
   const isAudio = tipo === 'audio';
-  const labelId = isAudio ? 'label-audio' : 'label-livros';
-  const countId = isAudio ? 'count-audio' : 'count-livros';
-  const gridId  = isAudio ? 'grid-audio'  : 'grid-livros';
-  const listId  = isAudio ? 'list-audio'  : 'list-livros';
-  const emptyId = isAudio ? 'empty-audio' : 'empty-livros';
-
-  document.getElementById(labelId).textContent = busca
-    ? `Resultados para "${busca}"`
-    : isAudio ? 'Todos os AudioBooks' : 'Todos os Livros';
-  document.getElementById(countId).textContent = `${books.length} ${books.length===1?'item':'itens'}`;
-  document.getElementById(emptyId).style.display = books.length ? 'none' : 'block';
-
-  renderGrid(gridId, books, isAudio);
-  renderList(listId, books, isAudio);
+  document.getElementById(isAudio ? 'label-audio'  : 'label-livros').textContent =
+    busca ? ('Resultados para "' + busca + '"') : (isAudio ? 'Todos os AudioBooks' : 'Todos os Livros');
+  document.getElementById(isAudio ? 'count-audio'  : 'count-livros').textContent =
+    books.length + ' ' + (books.length === 1 ? 'item' : 'itens');
+  document.getElementById(isAudio ? 'empty-audio'  : 'empty-livros').style.display =
+    books.length ? 'none' : 'block';
+  renderGrid(isAudio ? 'grid-audio' : 'grid-livros', books, isAudio, tipo);
+  renderList(isAudio ? 'list-audio' : 'list-livros', books, isAudio, tipo);
 }
 
 function coverHtml(b) {
-  if (b.capa) return `<img src="${b.capa}" alt="${b.titulo}" onerror="this.style.display='none'">`;
-  const bg = hexRgba(b.cor||'#e8a020', .1);
-  return `<div class="cover-placeholder" style="background:${bg}"><div class="cover-icon">${catEmoji(b.categoria)}</div><div class="cover-title">${b.titulo}</div></div>`;
+  if (b.capa) return '<img src="' + b.capa + '" onerror="this.style.display=\"none\"">';
+  var bg = hexRgba(b.cor || '#e8a020', 0.1);
+  return '<div class="cover-placeholder" style="background:' + bg + '"><div class="cover-icon">' + catEmoji(b.categoria) + '</div><div class="cover-title">' + b.titulo + '</div></div>';
 }
 
-function renderGrid(gridId, books, isAudio) {
-  const tipo = isAudio ? 'audio' : 'livros';
-  document.getElementById(gridId).innerHTML = books.map((b,i) => `
-    <div class="book-card${isAudio?' audio-card':''}" onclick="openModal('${isAudio?'audio':'livros'}',${i})" style="animation-delay:${i*35}ms">
-      <div class="book-stripe" style="background:${b.cor||'#e8a020'}"></div>
-      <div class="book-cover">
-        ${coverHtml(b)}
-        ${isAudio ? '<div class="yt-badge"><svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-2.75 12.57 12.57 0 0 0-10.88 0A4.83 4.83 0 0 1 1.17 6.69C0 9.13 0 12 0 12s0 2.87 1.17 5.31a4.83 4.83 0 0 0 3.77 2.75 12.57 12.57 0 0 0 10.88 0 4.83 4.83 0 0 0 3.77-2.75C21 14.87 21 12 21 12s0-2.87-1.41-5.31zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>YouTube</div>' : ''}
-      </div>
-      <div class="book-info">
-        <div class="book-title">${b.titulo}</div>
-        <div class="book-author">${b.autor||'—'}</div>
-        ${b.categoria?`<span class="book-cat${isAudio?' book-cat-audio':''}">${b.categoria}</span>`:''}
-      </div>
-      <div class="progress-badge" id="pb-${tipo}-${i}"></div>
-      <div class="book-overlay">
-        <div class="overlay-btn${isAudio?' overlay-btn-audio':''}">${isAudio?'▶ Ouvir':'📖 Abrir'}</div>
-      </div>
-    </div>`).join('');
-  // Renderiza badges de progresso
-  books.forEach((b,i) => renderBadge(tipo, i, b));
+function renderGrid(gridId, books, isAudio, tipo) {
+  var grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  books.forEach(function(b, i) {
+    var card = document.createElement('div');
+    card.className = 'book-card' + (isAudio ? ' audio-card' : '');
+    card.style.animationDelay = (i * 35) + 'ms';
+    card.onclick = function() { openModal(tipo, i); };
+
+    var prog = getProgresso(isAudio ? (b.youtube || b.titulo) : b.arquivo);
+    var badgeHtml = '';
+    if (prog && prog.pct > 0) {
+      badgeHtml = '<div class="progress-badge visible"><div class="progress-bar-mini"><div class="progress-bar-mini-fill" style="width:' + prog.pct + '%"></div></div><span class="progress-badge-label">' + prog.label + '</span></div>';
+    }
+
+    var ytBadge = isAudio ? '<div class="yt-badge"><svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M10,15L15.19,12L10,9V15M21.56,7.17C21.69,7.64 21.78,8.27 21.84,9.07C21.91,9.87 21.94,10.56 21.94,11.16L22,12C22,14.19 21.84,15.8 21.56,16.83C21.31,17.73 20.73,18.31 19.83,18.56C19.36,18.69 18.5,18.78 17.18,18.84C15.88,18.91 14.69,18.94 13.59,18.94L12,19C7.81,19 5.2,18.84 4.17,18.56C3.27,18.31 2.69,17.73 2.44,16.83C2.31,16.36 2.22,15.73 2.16,14.93C2.09,14.13 2.06,13.44 2.06,12.84L2,12C2,9.81 2.16,8.2 2.44,7.17C2.69,6.27 3.27,5.69 4.17,5.44C4.64,5.31 5.5,5.22 6.82,5.16C8.12,5.09 9.31,5.06 10.41,5.06L12,5C16.19,5 18.8,5.16 19.83,5.44C20.73,5.69 21.31,6.27 21.56,7.17Z"/></svg> YouTube</div>' : '';
+
+    card.innerHTML =
+      '<div class="book-stripe" style="background:' + (b.cor || '#e8a020') + '"></div>' +
+      '<div class="book-cover">' + coverHtml(b) + ytBadge + '</div>' +
+      '<div class="book-info">' +
+        '<div class="book-title">' + b.titulo + '</div>' +
+        '<div class="book-author">' + (b.autor || '—') + '</div>' +
+        (b.categoria ? '<span class="book-cat' + (isAudio ? ' book-cat-audio' : '') + '">' + b.categoria + '</span>' : '') +
+      '</div>' +
+      badgeHtml +
+      '<div class="book-overlay"><div class="overlay-btn' + (isAudio ? ' overlay-btn-audio' : '') + '">' + (isAudio ? '▶ Ouvir' : '📖 Abrir') + '</div></div>';
+
+    grid.appendChild(card);
+  });
 }
 
-function renderList(listId, books, isAudio) {
-  const list = document.getElementById(listId);
-  list.innerHTML = books.map((b,i) => `
-    <div class="list-item${isAudio?' audio-item':''}" >
-      <div class="list-icon" style="background:${hexRgba(b.cor||'#e8a020',.1)}">
-        ${b.capa?`<img src="${b.capa}" alt="${b.titulo}">`:(isAudio?'🎧':catEmoji(b.categoria))}
-      </div>
-      <div class="list-meta">
-        <div class="list-title">${b.titulo}</div>
-        <div class="list-author">${b.autor||'—'}</div>
-      </div>
-      <div class="list-right">
-        ${b.categoria?`<span class="list-cat">${b.categoria}</span>`:''}
-        <a class="list-open-btn${isAudio?' list-open-btn-audio':''}" href="${isAudio?(b.youtube||'#'):b.arquivo}" target="_blank" onclick="event.stopPropagation()">${isAudio?'▶ Ouvir':'Abrir PDF'}</a>
-      </div>
-    </div>`).join('');
-  list.querySelectorAll('.list-item').forEach((el,idx) => el.onclick = () => openModal(isAudio?'audio':'livros', idx));
+function renderList(listId, books, isAudio, tipo) {
+  var list = document.getElementById(listId);
+  list.innerHTML = '';
+  books.forEach(function(b, i) {
+    var item = document.createElement('div');
+    item.className = 'list-item' + (isAudio ? ' audio-item' : '');
+    item.onclick = function() { openModal(tipo, i); };
+
+    var iconHtml = b.capa
+      ? '<img src="' + b.capa + '" alt="' + b.titulo + '">'
+      : (isAudio ? '🎧' : catEmoji(b.categoria));
+
+    item.innerHTML =
+      '<div class="list-icon" style="background:' + hexRgba(b.cor || '#e8a020', 0.1) + '">' + iconHtml + '</div>' +
+      '<div class="list-meta">' +
+        '<div class="list-title">' + b.titulo + '</div>' +
+        '<div class="list-author">' + (b.autor || '—') + '</div>' +
+      '</div>' +
+      '<div class="list-right">' +
+        (b.categoria ? '<span class="list-cat">' + b.categoria + '</span>' : '') +
+        '<a class="list-open-btn' + (isAudio ? ' list-open-btn-audio' : '') + '" href="' + (isAudio ? (b.youtube || '#') : b.arquivo) + '" target="_blank" onclick="event.stopPropagation()">' + (isAudio ? '▶ Ouvir' : 'Abrir PDF') + '</a>' +
+      '</div>';
+
+    list.appendChild(item);
+  });
 }
 
-// ── MODAL ──
-function extrairVideoId(url) {
-  const m = (url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-
-let _audioAtual = null;
-
+// ══ MODAL LIVRO ══
 function openModal(tipo, idx) {
-  const isAudio = tipo === 'audio';
-  const b = getFiltered(tipo)[idx]; if (!b) return;
+  var isAudio = tipo === 'audio';
+  var b = getFiltered(tipo)[idx];
+  if (!b) return;
 
   if (isAudio) {
-    // ── Modal compacto de AudioBook ──
     _audioAtual = b;
     document.getElementById('audio-titulo').textContent = b.titulo;
     document.getElementById('audio-autor').textContent  = b.autor || '—';
     document.getElementById('audio-desc').textContent   = b.descricao || '';
     document.getElementById('yt-popup-title').textContent = b.titulo;
 
-    // Botão continuar audio
-    const id = b.youtube || b.titulo;
-    const progA = getProgresso(id);
-    const btnCA = document.getElementById('btn-continuar-audio');
+    var capaEl = document.getElementById('audio-capa');
+    if (b.capa) { capaEl.innerHTML = '<img src="' + b.capa + '" alt="' + b.titulo + '">'; }
+    else { capaEl.style.background = hexRgba(b.cor || '#e03030', 0.15); capaEl.innerHTML = '🎧'; }
+
+    var id = b.youtube || b.titulo;
+    var progA = getProgresso(id);
+    var btnCA = document.getElementById('btn-continuar-audio');
     if (progA && progA.pct > 0) {
       btnCA.style.display = 'block';
-      btnCA.className = 'btn-continuar visible';
-      btnCA.textContent = `📌 Continuar — ${progA.label}`;
+      btnCA.textContent = '📌 Continuar — ' + progA.label;
     } else {
       btnCA.style.display = 'none';
     }
-
-    const capaEl = document.getElementById('audio-capa');
-    if (b.capa) { capaEl.innerHTML = `<img src="${b.capa}" alt="${b.titulo}">`; }
-    else { capaEl.style.background = hexRgba(b.cor||'#e03030',.15); capaEl.innerHTML = '🎧'; }
 
     document.getElementById('modal-audio').classList.add('open');
     document.body.style.overflow = 'hidden';
 
   } else {
-    // ── Modal normal de Livro ──
     document.getElementById('modal-title').textContent  = b.titulo;
     document.getElementById('modal-author').textContent = b.autor || '—';
     document.getElementById('modal-cat').textContent    = b.categoria || 'Livro';
@@ -1009,32 +1014,30 @@ function openModal(tipo, idx) {
     document.getElementById('modal-desc').textContent   = b.descricao || 'Sem descrição disponível.';
     document.getElementById('modal-header').className   = 'modal-header';
 
-    // Botão principal — abre leitor inline
-    const btnModal = document.getElementById('modal-btn');
+    var btnModal = document.getElementById('modal-btn');
     btnModal.textContent = '📖 Ler agora';
     btnModal.removeAttribute('href');
-    btnModal.onclick = (e) => { e.preventDefault(); closeModal(); abrirPDF(b); };
+    btnModal.onclick = function(e) { e.preventDefault(); closeModal(); abrirPDF(b); };
 
-    // Botão continuar
-    let btnCont = document.getElementById('btn-continuar');
+    var prog = getProgresso(b.arquivo);
+    var btnCont = document.getElementById('btn-continuar');
     if (!btnCont) {
       btnCont = document.createElement('button');
       btnCont.id = 'btn-continuar';
       btnCont.className = 'btn-continuar';
       document.getElementById('modal-btn').before(btnCont);
     }
-    const prog = getProgresso(b.arquivo);
     if (prog && prog.pct > 0) {
       btnCont.className = 'btn-continuar visible';
-      btnCont.textContent = `📌 Continuar — ${prog.label}`;
-      btnCont.onclick = () => { closeModal(); abrirPDF(b, prog.pct); };
+      btnCont.textContent = '📌 Continuar — ' + prog.label;
+      btnCont.onclick = function() { closeModal(); abrirPDF(b, prog.pct); };
     } else {
       btnCont.className = 'btn-continuar';
     }
 
-    const coverEl = document.getElementById('modal-cover');
-    if (b.capa) { coverEl.innerHTML = `<img src="${b.capa}" alt="${b.titulo}">`; }
-    else { coverEl.style.background = hexRgba(b.cor||'#e8a020',.15); coverEl.innerHTML = `<span>${catEmoji(b.categoria)}</span>`; }
+    var coverEl = document.getElementById('modal-cover');
+    if (b.capa) { coverEl.innerHTML = '<img src="' + b.capa + '" alt="' + b.titulo + '">'; }
+    else { coverEl.style.background = hexRgba(b.cor || '#e8a020', 0.15); coverEl.innerHTML = '<span>' + catEmoji(b.categoria) + '</span>'; }
 
     document.getElementById('modal').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1051,27 +1054,31 @@ function closeAudioModal(e) {
   if (e && e.target !== document.getElementById('modal-audio')) return;
   document.getElementById('modal-audio').classList.remove('open');
   document.body.style.overflow = '';
-  // Não para o popup — usuário pode continuar ouvindo!
 }
 
-function abrirPopupYT() {
+// ══ POPUP YOUTUBE ══
+let _audioAtual = null;
+let _popupTimer = null;
+
+function extrairVideoId(url) {
+  var m = (url || '').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function abrirPopupYT(continuar) {
   if (!_audioAtual || !_audioAtual.youtube) return;
-  const vid = extrairVideoId(_audioAtual.youtube);
+  var vid = extrairVideoId(_audioAtual.youtube);
   if (!vid) { window.open(_audioAtual.youtube, '_blank'); return; }
 
-  // Reseta fallback
   document.getElementById('yt-popup-fallback').classList.remove('visible');
   document.getElementById('yt-iframe').style.visibility = 'visible';
   document.getElementById('yt-fallback-link').href = _audioAtual.youtube;
-
   document.getElementById('yt-iframe').src =
-    `https://www.youtube.com/embed/${vid}?autoplay=1&rel=0&enablejsapi=1`;
+    'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0&enablejsapi=1';
   document.getElementById('yt-popup').classList.add('visible');
 
-  // Inicia contador de progresso
   iniciarProgressoAudio(_audioAtual);
 
-  // Fecha o modal — popup fica flutuando
   document.getElementById('modal-audio').classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -1079,46 +1086,35 @@ function abrirPopupYT() {
 function fecharPopupYT() {
   pararProgressoAudio();
   if (_audioAtual) {
-    const id = _audioAtual.youtube || _audioAtual.titulo;
-    const h = Math.floor(_audioMinuto / 60);
-    const m = _audioMinuto % 60;
-    const label = h > 0 ? `${h}h${String(m).padStart(2,'0')}min` : `${m}min`;
-    salvarProgresso(id, Math.min(99, (_audioMinuto/180)*100), label);
-    render('audio'); // Atualiza badges
+    var id = _audioAtual.youtube || _audioAtual.titulo;
+    var h = Math.floor(_audioMinuto / 60);
+    var m = _audioMinuto % 60;
+    var label = h > 0 ? (h + 'h' + String(m).padStart(2,'0') + 'min') : (m + 'min');
+    salvarProgresso(id, Math.min(99, (_audioMinuto / 180) * 100), label);
+    render('audio');
   }
   document.getElementById('yt-iframe').src = '';
   document.getElementById('yt-popup').classList.remove('visible');
   document.getElementById('yt-popup-fallback').classList.remove('visible');
 }
 
-// Detecta embed bloqueado via postMessage do YouTube
+function checkIframeLoad(iframe) {
+  if (_popupTimer) clearTimeout(_popupTimer);
+  _popupTimer = setTimeout(function() {
+    try {
+      var doc = iframe.contentDocument || iframe.contentWindow.document;
+      if (!doc || !doc.body || doc.body.innerHTML.trim() === '') mostrarFallbackPopup();
+    } catch(e) {}
+  }, 3500);
+}
+
 window.addEventListener('message', function(e) {
   if (!String(e.origin).includes('youtube')) return;
   try {
-    const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-    if (d && (d.info === 150 || d.info === 153 || d.info === 101 ||
-        (d.event === 'infoDelivery' && d.info && d.info.error))) {
-      mostrarFallbackPopup();
-    }
+    var d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    if (d && (d.info === 150 || d.info === 153 || d.info === 101)) mostrarFallbackPopup();
   } catch(err) {}
 });
-
-// Detecta também via timer — se após 3.5s o iframe não respondeu nada
-let _popupTimer = null;
-function checkIframeLoad(iframe) {
-  if (_popupTimer) clearTimeout(_popupTimer);
-  _popupTimer = setTimeout(() => {
-    try {
-      // Se conseguir acessar o contentDocument e estiver vazio = bloqueado
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      if (!doc || !doc.body || doc.body.innerHTML.trim() === '') {
-        mostrarFallbackPopup();
-      }
-    } catch(e) {
-      // CORS normal do YouTube — não é erro de bloqueio
-    }
-  }, 3500);
-}
 
 function mostrarFallbackPopup() {
   if (_popupTimer) { clearTimeout(_popupTimer); _popupTimer = null; }
@@ -1126,20 +1122,126 @@ function mostrarFallbackPopup() {
   document.getElementById('yt-popup-fallback').classList.add('visible');
 }
 
-// ── VIEW / BUSCA ──
-function setView(mode){
-  const isList=mode==='list';
-  document.body.classList.toggle('list-mode',isList);
-  document.getElementById('btn-list').classList.toggle('active',isList);
-  document.getElementById('btn-grid').classList.toggle('active',!isList);
+// ══ LEITOR PDF ══
+let _pdfAtual = null, _pdfPct = 0, _pdfTimer = null;
+
+function abrirPDF(b, pctInicial) {
+  pctInicial = pctInicial || 0;
+  _pdfAtual = b; _pdfPct = pctInicial;
+  document.getElementById('pdf-title').textContent = b.titulo;
+  document.getElementById('pdf-info').textContent  = b.autor || '';
+  document.getElementById('pdf-frame').src = b.arquivo;
+  atualizarBarraPDF(pctInicial);
+  document.getElementById('pdf-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (_pdfTimer) clearInterval(_pdfTimer);
+  _pdfTimer = setInterval(function() {
+    if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+  }, 20000);
 }
-document.getElementById('search').addEventListener('input',e=>{busca=e.target.value.trim();render('livros');render('audio');});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('modal').classList.remove('open');document.body.style.overflow='';}});
 
-// ── HELPERS ──
-function catEmoji(cat){const m={'Literatura':'📖','Tecnologia':'💻','Gestão':'📊','Artigos':'📰','Documentos':'📄','Livros':'📚','Direito':'⚖️','Medicina':'🏥','Engenharia':'🔧','História':'🏛️','Filosofia':'💭','Economia':'📈','Educação':'🎓'};return m[cat]||'📄';}
-function hexRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+function fecharPDF() {
+  if (_pdfTimer) { clearInterval(_pdfTimer); _pdfTimer = null; }
+  if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+  document.getElementById('pdf-frame').src = '';
+  document.getElementById('pdf-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  render('livros');
+}
 
+function atualizarBarraPDF(pct) {
+  _pdfPct = Math.max(0, Math.min(100, pct));
+  document.getElementById('pdf-progress-bar').style.width = _pdfPct + '%';
+  document.getElementById('pdf-pag-label').textContent = Math.round(_pdfPct) + '% lido';
+}
+
+function setPdfProgress(e) {
+  var pct = (e.offsetX / e.currentTarget.offsetWidth) * 100;
+  atualizarBarraPDF(pct);
+  if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+}
+
+function salvarMarcador() {
+  if (!_pdfAtual) return;
+  var entrada = prompt('Marcar em que % você está? (0-100)', Math.round(_pdfPct));
+  if (entrada === null) return;
+  var pct = Math.max(0, Math.min(100, parseFloat(entrada) || 0));
+  atualizarBarraPDF(pct);
+  salvarProgresso(_pdfAtual.arquivo, pct, pct + '%');
+  document.getElementById('pdf-info').textContent = '✅ Salvo em ' + pct + '%';
+  setTimeout(function() { document.getElementById('pdf-info').textContent = _pdfAtual.autor || ''; }, 2000);
+}
+
+// ══ PROGRESSO AUDIOBOOK ══
+let _audioTimer = null, _audioMinuto = 0;
+
+function iniciarProgressoAudio(b) {
+  var id = b.youtube || b.titulo;
+  var prog = getProgresso(id);
+  _audioMinuto = prog ? Math.round((prog.pct / 100) * 180) : 0;
+  if (_audioTimer) clearInterval(_audioTimer);
+  _audioTimer = setInterval(function() {
+    _audioMinuto++;
+    var h = Math.floor(_audioMinuto / 60);
+    var m = _audioMinuto % 60;
+    var label = h > 0 ? (h + 'h' + String(m).padStart(2,'0') + 'min') : (m + 'min');
+    salvarProgresso(id, Math.min(99, (_audioMinuto / 180) * 100), label);
+  }, 60000);
+}
+
+function pararProgressoAudio() {
+  if (_audioTimer) { clearInterval(_audioTimer); _audioTimer = null; }
+}
+
+// ══ PROGRESSO LOCAL ══
+const STORAGE_KEY = 'll_progresso';
+function getProgressoTodos() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; } }
+function getProgresso(id) { return getProgressoTodos()[id] || null; }
+function salvarProgresso(id, pct, label) {
+  var t = getProgressoTodos(); t[id] = { pct: pct, label: label, ts: Date.now() };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(t));
+}
+
+// ══ VIEW / BUSCA ══
+function setView(mode) {
+  var isList = mode === 'list';
+  document.body.classList.toggle('list-mode', isList);
+  document.getElementById('btn-list').classList.toggle('active', isList);
+  document.getElementById('btn-grid').classList.toggle('active', !isList);
+}
+
+document.getElementById('search').addEventListener('input', function(e) {
+  busca = e.target.value.trim();
+  render('livros'); render('audio');
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('modal').classList.remove('open');
+    document.getElementById('modal-audio').classList.remove('open');
+    document.getElementById('pdf-overlay').classList.remove('open');
+    document.getElementById('pdf-frame').src = '';
+    document.getElementById('yt-iframe').src = '';
+    document.getElementById('yt-popup').classList.remove('visible');
+    document.body.style.overflow = '';
+    if (_pdfTimer) { clearInterval(_pdfTimer); _pdfTimer = null; }
+    pararProgressoAudio();
+  }
+});
+
+// ══ HELPERS ══
+function catEmoji(cat) {
+  var m = {'Literatura':'📖','Tecnologia':'💻','Gestão':'📊','Artigos':'📰',
+    'Documentos':'📄','Livros':'📚','Direito':'⚖️','Medicina':'🏥',
+    'Engenharia':'🔧','História':'🏛️','Filosofia':'💭','Economia':'📈','Educação':'🎓'};
+  return m[cat] || '📄';
+}
+function hexRgba(hex, a) {
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+
+// ══ START ══
 init();
 </script>
 </body>
