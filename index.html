@@ -920,6 +920,7 @@ function coverHtml(b) {
 }
 
 function renderGrid(gridId, books, isAudio) {
+  const tipo = isAudio ? 'audio' : 'livros';
   document.getElementById(gridId).innerHTML = books.map((b,i) => `
     <div class="book-card${isAudio?' audio-card':''}" onclick="openModal('${isAudio?'audio':'livros'}',${i})" style="animation-delay:${i*35}ms">
       <div class="book-stripe" style="background:${b.cor||'#e8a020'}"></div>
