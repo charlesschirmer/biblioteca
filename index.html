@@ -928,8 +928,8 @@ function renderGrid(gridId, books, isAudio, tipo) {
 
     var prog = getProgresso(isAudio ? (b.youtube || b.titulo) : b.arquivo);
     var badgeHtml = '';
-    if (prog && prog.pct > 0) {
-      badgeHtml = '<div class="progress-badge visible"><div class="progress-bar-mini"><div class="progress-bar-mini-fill" style="width:' + prog.pct + '%"></div></div><span class="progress-badge-label">' + prog.label + '</span></div>';
+    if (prog && prog.label) {
+      badgeHtml = '<div class="progress-badge visible"><span class="progress-badge-label" style="font-size:.7rem;padding:2px 0;">&#128278; ' + prog.label + '</span></div>';
     }
 
     var ytBadge = isAudio ? '<div class="yt-badge"><svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M10,15L15.19,12L10,9V15M21.56,7.17C21.69,7.64 21.78,8.27 21.84,9.07C21.91,9.87 21.94,10.56 21.94,11.16L22,12C22,14.19 21.84,15.8 21.56,16.83C21.31,17.73 20.73,18.31 19.83,18.56C19.36,18.69 18.5,18.78 17.18,18.84C15.88,18.91 14.69,18.94 13.59,18.94L12,19C7.81,19 5.2,18.84 4.17,18.56C3.27,18.31 2.69,17.73 2.44,16.83C2.31,16.36 2.22,15.73 2.16,14.93C2.09,14.13 2.06,13.44 2.06,12.84L2,12C2,9.81 2.16,8.2 2.44,7.17C2.69,6.27 3.27,5.69 4.17,5.44C4.64,5.31 5.5,5.22 6.82,5.16C8.12,5.09 9.31,5.06 10.41,5.06L12,5C16.19,5 18.8,5.16 19.83,5.44C20.73,5.69 21.31,6.27 21.56,7.17Z"/></svg> YouTube</div>' : '';
@@ -1029,8 +1029,9 @@ function openModal(tipo, idx) {
     }
     if (prog && prog.pct > 0) {
       btnCont.className = 'btn-continuar visible';
-      btnCont.textContent = '📌 Continuar — ' + prog.label;
-      btnCont.onclick = function() { closeModal(); abrirPDF(b, prog.pct); };
+      btnCont.textContent = 'Continuar — ' + prog.label;
+      var pagSalva = _pdfPaginas > 0 ? Math.max(1, Math.round(prog.pct * _pdfPaginas / 100)) : 1;
+      btnCont.onclick = function() { closeModal(); abrirPDF(b, pagSalva); };
     } else {
       btnCont.className = 'btn-continuar';
     }
@@ -1123,99 +1124,91 @@ function mostrarFallbackPopup() {
 }
 
 // ══ LEITOR PDF ══
-let _pdfAtual = null, _pdfPct = 0, _pdfPaginas = 0, _pdfTimer = null;
+let _pdfAtual = null, _pdfPct = 0, _pdfPaginas = 0, _pdfPagAtual = 1, _pdfTimer = null;
 
-function abrirPDF(b, pctInicial) {
-  pctInicial = pctInicial || 0;
-  _pdfAtual = b; _pdfPct = pctInicial;
+function abrirPDF(b, pagInicial) {
+  pagInicial = pagInicial || 1;
+  _pdfAtual = b;
   _pdfPaginas = b.paginas || 0;
+  _pdfPagAtual = pagInicial;
 
   document.getElementById('pdf-title').textContent = b.titulo;
+  document.getElementById('pdf-info').textContent  =
+    _pdfPaginas > 0 ? (b.autor ? b.autor + ' · ' : '') + _pdfPaginas + ' paginas' : (b.autor || '');
 
-  // Info: mostra total de páginas se disponível
-  var infoTxt = b.autor || '';
-  if (_pdfPaginas > 0) infoTxt += (infoTxt ? ' · ' : '') + _pdfPaginas + ' páginas';
-  document.getElementById('pdf-info').textContent = infoTxt;
+  // Abre o PDF e vai para a página salva via fragmento #page=N
+  var src = b.arquivo + (_pdfPaginas > 0 && pagInicial > 1 ? '#page=' + pagInicial : '');
+  document.getElementById('pdf-frame').src = src;
 
-  document.getElementById('pdf-frame').src = b.arquivo;
-  atualizarBarraPDF(pctInicial, _pdfPaginas > 0 ? Math.round(pctInicial * _pdfPaginas / 100) : null);
-
+  atualizarBarraPDF();
   document.getElementById('pdf-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+
   if (_pdfTimer) clearInterval(_pdfTimer);
   _pdfTimer = setInterval(function() {
-    if (_pdfAtual) {
-      var lbl = _pdfPaginas > 0
-        ? 'Pág. ' + Math.round(_pdfPct * _pdfPaginas / 100) + '/' + _pdfPaginas
-        : Math.round(_pdfPct) + '%';
-      salvarProgresso(_pdfAtual.arquivo, _pdfPct, lbl);
-    }
-  }, 20000);
+    if (_pdfAtual && _pdfPagAtual > 1) salvarMarcadorSilencioso();
+  }, 30000);
 }
 
 function fecharPDF() {
   if (_pdfTimer) { clearInterval(_pdfTimer); _pdfTimer = null; }
-  if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+  if (_pdfAtual && _pdfPagAtual > 1) salvarMarcadorSilencioso();
   document.getElementById('pdf-frame').src = '';
   document.getElementById('pdf-overlay').classList.remove('open');
   document.body.style.overflow = '';
   render('livros');
 }
 
-function atualizarBarraPDF(pct, pagAtual) {
-  _pdfPct = Math.max(0, Math.min(100, pct));
-  document.getElementById('pdf-progress-bar').style.width = _pdfPct + '%';
+function atualizarBarraPDF() {
   if (_pdfPaginas > 0) {
-    var pag = pagAtual !== undefined && pagAtual !== null
-      ? pagAtual
-      : Math.round(_pdfPct * _pdfPaginas / 100);
-    pag = Math.max(1, Math.min(_pdfPaginas, pag));
+    var pct = (_pdfPagAtual / _pdfPaginas) * 100;
+    _pdfPct = pct;
+    document.getElementById('pdf-progress-bar').style.width = pct + '%';
     document.getElementById('pdf-pag-label').textContent =
-      'Pág. ' + pag + ' / ' + _pdfPaginas + ' (' + Math.round(_pdfPct) + '%)';
+      'Pag. ' + _pdfPagAtual + ' / ' + _pdfPaginas;
   } else {
-    document.getElementById('pdf-pag-label').textContent = Math.round(_pdfPct) + '% lido';
+    document.getElementById('pdf-pag-label').textContent = 'Marque sua pagina';
   }
 }
 
 function setPdfProgress(e) {
-  var pct = (e.offsetX / e.currentTarget.offsetWidth) * 100;
-  atualizarBarraPDF(pct, null);
-  if (_pdfAtual) {
-    var lbl = _pdfPaginas > 0
-      ? 'Pág. ' + Math.round(_pdfPct * _pdfPaginas / 100) + '/' + _pdfPaginas
-      : Math.round(_pdfPct) + '%';
-    salvarProgresso(_pdfAtual.arquivo, _pdfPct, lbl);
-  }
+  if (_pdfPaginas < 1) return;
+  var pct = e.offsetX / e.currentTarget.offsetWidth;
+  _pdfPagAtual = Math.max(1, Math.min(_pdfPaginas, Math.round(pct * _pdfPaginas)));
+  atualizarBarraPDF();
+  // Navega para a página clicada
+  var frame = document.getElementById('pdf-frame');
+  frame.src = _pdfAtual.arquivo + '#page=' + _pdfPagAtual;
+  salvarMarcadorSilencioso();
 }
 
 function salvarMarcador() {
   if (!_pdfAtual) return;
+  var entrada = prompt(
+    'Em qual pagina voce parou?' + (_pdfPaginas > 0 ? ' (1 a ' + _pdfPaginas + ')' : ''),
+    _pdfPagAtual || 1
+  );
+  if (entrada === null) return;
+  var pag = parseInt(entrada) || 1;
+  if (_pdfPaginas > 0) pag = Math.max(1, Math.min(_pdfPaginas, pag));
+  _pdfPagAtual = pag;
+  atualizarBarraPDF();
+  salvarMarcadorSilencioso();
+  // Navega para a página
+  document.getElementById('pdf-frame').src = _pdfAtual.arquivo + '#page=' + pag;
+  var info = document.getElementById('pdf-info');
+  var orig = info.textContent;
+  info.textContent = 'Marcador salvo — pag. ' + pag;
+  setTimeout(function() { info.textContent = orig; }, 2500);
+}
 
-  var pct, lbl;
-
-  if (_pdfPaginas > 0) {
-    var pagAtual = Math.max(1, Math.round(_pdfPct * _pdfPaginas / 100));
-    var entrada = prompt('Em qual pagina voce esta? (Total: ' + _pdfPaginas + ' paginas)', pagAtual);
-    if (entrada === null) return;
-    var pag = Math.max(1, Math.min(_pdfPaginas, parseInt(entrada) || pagAtual));
-    pct = (pag / _pdfPaginas) * 100;
-    lbl = 'Pág. ' + pag + '/' + _pdfPaginas;
-    atualizarBarraPDF(pct, pag);
-  } else {
-    // Sem total — pergunta % direto
-    var entradaPct = prompt('Em que % você está? (0-100)', Math.round(_pdfPct));
-    if (entradaPct === null) return;
-    pct = Math.max(0, Math.min(100, parseFloat(entradaPct) || 0));
-    lbl = Math.round(pct) + '%';
-    atualizarBarraPDF(pct, null);
-  }
-
+function salvarMarcadorSilencioso() {
+  if (!_pdfAtual) return;
+  var lbl = _pdfPaginas > 0
+    ? 'Pag. ' + _pdfPagAtual + '/' + _pdfPaginas
+    : 'Pag. ' + _pdfPagAtual;
+  var pct = _pdfPaginas > 0 ? (_pdfPagAtual / _pdfPaginas) * 100 : 0;
   salvarProgresso(_pdfAtual.arquivo, pct, lbl);
-
-  var infoEl = document.getElementById('pdf-info');
-  var infoOrig = infoEl.textContent;
-  infoEl.textContent = '✅ Marcador salvo — ' + lbl;
-  setTimeout(function() { infoEl.textContent = infoOrig; }, 2500);
 }
 
 // ══ PROGRESSO AUDIOBOOK ══
