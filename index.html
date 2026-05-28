@@ -419,6 +419,7 @@ footer a{color:var(--gold);text-decoration:none;}
 body.list-mode .books-grid{display:none;}
 body.list-mode .books-list{display:flex;}
 </style>
+<script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
@@ -565,7 +566,7 @@ body.list-mode .books-list{display:flex;}
     <span class="yt-popup-title" id="yt-popup-title">Tocando...</span>
     <button class="yt-popup-close" onclick="fecharPopupYT()">✕</button>
   </div>
-  <iframe id="yt-iframe" src="" allowfullscreen allow="autoplay; encrypted-media" style="margin-top:32px;height:calc(100% - 32px);"></iframe>
+  <div id="yt-player-wrap" style="margin-top:32px;height:calc(100% - 32px);"></div>
   <!-- Fallback embed bloqueado -->
   <div id="yt-popup-fallback" style="display:none;position:absolute;inset:32px 0 0 0;background:#0a0a0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1rem;text-align:center;">
     <div style="font-size:1.5rem;">🎧</div>
@@ -1070,32 +1071,45 @@ function abrirPopupYT(continuar) {
   var vid = extrairVideoId(_audioAtual.youtube);
   if (!vid) { window.open(_audioAtual.youtube, '_blank'); return; }
 
-  // Se "continuar", começa no minuto salvo
   var startSeg = 0;
   if (continuar) {
     var id   = _audioAtual.youtube || _audioAtual.titulo;
     var prog = getProgresso(id);
     if (prog && prog.pct > 0) {
-      // Recalcula minuto a partir do label salvo (ex: "32min" ou "1h05min")
-      startSeg = minutosParaSegundos(prog.label);
+      startSeg   = minutosParaSegundos(prog.label);
       _audioMinuto = Math.floor(startSeg / 60);
     }
   } else {
     _audioMinuto = 0;
-    startSeg = 0;
   }
 
   document.getElementById('yt-popup-fallback').classList.remove('visible');
-  document.getElementById('yt-iframe').style.visibility = 'visible';
-  document.getElementById('yt-fallback-link').href = _audioAtual.youtube;
-
-  var embedUrl = 'https://www.youtube.com/embed/' + vid +
-    '?autoplay=1&rel=0&enablejsapi=1' +
-    (startSeg > 0 ? '&start=' + startSeg : '');
-
-  document.getElementById('yt-iframe').src = embedUrl;
   document.getElementById('yt-popup').classList.add('visible');
   document.getElementById('yt-popup-title').textContent = _audioAtual.titulo;
+
+  // Cria o player via YT API — permite ler getCurrentTime()
+  if (_ytPlayer) {
+    try { _ytPlayer.destroy(); } catch(e) {}
+    _ytPlayer = null;
+  }
+  document.getElementById('yt-player-wrap').innerHTML = '<div id="yt-player-div"></div>';
+
+  _ytPlayer = new YT.Player('yt-player-div', {
+    width:  '100%',
+    height: '100%',
+    videoId: vid,
+    playerVars: {
+      autoplay: 1,
+      rel:      0,
+      start:    startSeg,
+      enablejsapi: 1
+    },
+    events: {
+      onError: function(e) {
+        if (e.data === 150 || e.data === 153 || e.data === 101) mostrarFallbackPopup();
+      }
+    }
+  });
 
   iniciarProgressoAudio(_audioAtual);
 
@@ -1106,13 +1120,20 @@ function abrirPopupYT(continuar) {
 function fecharPopupYT() {
   pararProgressoAudio();
 
-  // Pergunta até que minuto ouviu
-  if (_audioAtual) {
-    var sugestao = _audioMinuto > 0 ? _audioMinuto : 1;
-    var entrada = prompt('Ate que minuto voce ouviu?', sugestao);
+  // Tenta pegar o minuto exato do player YT
+  var minAtual = _audioMinuto;
+  if (_ytPlayer && typeof _ytPlayer.getCurrentTime === 'function') {
+    try {
+      var seg = _ytPlayer.getCurrentTime();
+      if (seg && seg > 0) minAtual = Math.floor(seg / 60);
+    } catch(e) {}
+  }
+
+  if (_audioAtual && minAtual > 0) {
+    var sugestao = minAtual;
+    var entrada  = prompt('Ate que minuto voce ouviu?', sugestao);
     if (entrada !== null) {
       var min = Math.max(1, parseInt(entrada) || sugestao);
-      _audioMinuto = min;
       var h   = Math.floor(min / 60);
       var m   = min % 60;
       var lbl = h > 0 ? (h + 'h' + String(m).padStart(2,'0') + 'min') : (min + 'min');
@@ -1122,7 +1143,9 @@ function fecharPopupYT() {
     }
   }
 
-  document.getElementById('yt-iframe').src = '';
+  // Para e destrói o player
+  try { if (_ytPlayer) { _ytPlayer.stopVideo(); _ytPlayer.destroy(); _ytPlayer = null; } } catch(e) {}
+  document.getElementById('yt-player-wrap').innerHTML = '<div id="yt-player-div"></div>';
   document.getElementById('yt-popup').classList.remove('visible');
   document.getElementById('yt-popup-fallback').classList.remove('visible');
 }
@@ -1147,8 +1170,9 @@ window.addEventListener('message', function(e) {
 
 function mostrarFallbackPopup() {
   if (_popupTimer) { clearTimeout(_popupTimer); _popupTimer = null; }
-  document.getElementById('yt-iframe').style.visibility = 'hidden';
+  document.getElementById('yt-player-wrap').style.visibility = 'hidden';
   document.getElementById('yt-popup-fallback').classList.add('visible');
+  document.getElementById('yt-fallback-link').href = _audioAtual ? _audioAtual.youtube : '#';
 }
 
 // ══ LEITOR PDF ══
@@ -1241,6 +1265,13 @@ function salvarMarcadorSilencioso() {
 
 // ══ PROGRESSO AUDIOBOOK ══
 let _audioTimer = null, _audioMinuto = 0;
+let _ytPlayer   = null;
+let _ytApiReady = false;
+
+// Callback obrigatório da YouTube IFrame API
+function onYouTubeIframeAPIReady() {
+  _ytApiReady = true;
+}
 
 function iniciarProgressoAudio(b) {
   var id = b.youtube || b.titulo;
@@ -1288,7 +1319,7 @@ document.addEventListener('keydown', function(e) {
     document.getElementById('modal-audio').classList.remove('open');
     document.getElementById('pdf-overlay').classList.remove('open');
     document.getElementById('pdf-frame').src = '';
-    document.getElementById('yt-iframe').src = '';
+    
     document.getElementById('yt-popup').classList.remove('visible');
     document.body.style.overflow = '';
     if (_pdfTimer) { clearInterval(_pdfTimer); _pdfTimer = null; }
