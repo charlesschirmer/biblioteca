@@ -550,7 +550,7 @@ body.list-mode .books-list{display:flex;}
         <div class="audio-autor" id="audio-autor"></div>
         <div class="audio-desc" id="audio-desc"></div>
         <button class="btn-continuar" id="btn-continuar-audio" style="display:none;width:100%;margin-bottom:.6rem;" onclick="abrirPopupYT(true)"></button>
-        <button class="btn-play-yt" id="btn-play-yt" onclick="abrirPopupYT()">
+        <button class="btn-play-yt" id="btn-play-yt" onclick="abrirPopupYT(false)">
           <span class="play-icon">▶</span>
           Ouvir AudioBook
         </button>
@@ -1070,12 +1070,32 @@ function abrirPopupYT(continuar) {
   var vid = extrairVideoId(_audioAtual.youtube);
   if (!vid) { window.open(_audioAtual.youtube, '_blank'); return; }
 
+  // Se "continuar", começa no minuto salvo
+  var startSeg = 0;
+  if (continuar) {
+    var id   = _audioAtual.youtube || _audioAtual.titulo;
+    var prog = getProgresso(id);
+    if (prog && prog.pct > 0) {
+      // Recalcula minuto a partir do label salvo (ex: "32min" ou "1h05min")
+      startSeg = minutosParaSegundos(prog.label);
+      _audioMinuto = Math.floor(startSeg / 60);
+    }
+  } else {
+    _audioMinuto = 0;
+    startSeg = 0;
+  }
+
   document.getElementById('yt-popup-fallback').classList.remove('visible');
   document.getElementById('yt-iframe').style.visibility = 'visible';
   document.getElementById('yt-fallback-link').href = _audioAtual.youtube;
-  document.getElementById('yt-iframe').src =
-    'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0&enablejsapi=1';
+
+  var embedUrl = 'https://www.youtube.com/embed/' + vid +
+    '?autoplay=1&rel=0&enablejsapi=1' +
+    (startSeg > 0 ? '&start=' + startSeg : '');
+
+  document.getElementById('yt-iframe').src = embedUrl;
   document.getElementById('yt-popup').classList.add('visible');
+  document.getElementById('yt-popup-title').textContent = _audioAtual.titulo;
 
   iniciarProgressoAudio(_audioAtual);
 
@@ -1085,14 +1105,23 @@ function abrirPopupYT(continuar) {
 
 function fecharPopupYT() {
   pararProgressoAudio();
+
+  // Pergunta até que minuto ouviu
   if (_audioAtual) {
-    var id = _audioAtual.youtube || _audioAtual.titulo;
-    var h = Math.floor(_audioMinuto / 60);
-    var m = _audioMinuto % 60;
-    var label = h > 0 ? (h + 'h' + String(m).padStart(2,'0') + 'min') : (m + 'min');
-    salvarProgresso(id, Math.min(99, (_audioMinuto / 180) * 100), label);
-    render('audio');
+    var sugestao = _audioMinuto > 0 ? _audioMinuto : 1;
+    var entrada = prompt('Ate que minuto voce ouviu?', sugestao);
+    if (entrada !== null) {
+      var min = Math.max(1, parseInt(entrada) || sugestao);
+      _audioMinuto = min;
+      var h   = Math.floor(min / 60);
+      var m   = min % 60;
+      var lbl = h > 0 ? (h + 'h' + String(m).padStart(2,'0') + 'min') : (min + 'min');
+      var id  = _audioAtual.youtube || _audioAtual.titulo;
+      salvarProgresso(id, Math.min(99, (min / 180) * 100), lbl);
+      render('audio');
+    }
   }
+
   document.getElementById('yt-iframe').src = '';
   document.getElementById('yt-popup').classList.remove('visible');
   document.getElementById('yt-popup-fallback').classList.remove('visible');
@@ -1268,6 +1297,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ══ HELPERS ══
+function minutosParaSegundos(label) {
+  if (!label) return 0;
+  // Formato "1h05min" ou "32min"
+  var hMatch = label.match(/(\d+)h/);
+  var mMatch = label.match(/(\d+)min/);
+  var h = hMatch ? parseInt(hMatch[1]) : 0;
+  var m = mMatch ? parseInt(mMatch[1]) : 0;
+  return (h * 60 + m) * 60;
+}
 function catEmoji(cat) {
   var m = {'Literatura':'📖','Tecnologia':'💻','Gestão':'📊','Artigos':'📰',
     'Documentos':'📄','Livros':'📚','Direito':'⚖️','Medicina':'🏥',
