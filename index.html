@@ -1123,20 +1123,33 @@ function mostrarFallbackPopup() {
 }
 
 // ══ LEITOR PDF ══
-let _pdfAtual = null, _pdfPct = 0, _pdfTimer = null;
+let _pdfAtual = null, _pdfPct = 0, _pdfPaginas = 0, _pdfTimer = null;
 
 function abrirPDF(b, pctInicial) {
   pctInicial = pctInicial || 0;
   _pdfAtual = b; _pdfPct = pctInicial;
+  _pdfPaginas = b.paginas || 0;
+
   document.getElementById('pdf-title').textContent = b.titulo;
-  document.getElementById('pdf-info').textContent  = b.autor || '';
+
+  // Info: mostra total de páginas se disponível
+  var infoTxt = b.autor || '';
+  if (_pdfPaginas > 0) infoTxt += (infoTxt ? ' · ' : '') + _pdfPaginas + ' páginas';
+  document.getElementById('pdf-info').textContent = infoTxt;
+
   document.getElementById('pdf-frame').src = b.arquivo;
-  atualizarBarraPDF(pctInicial);
+  atualizarBarraPDF(pctInicial, _pdfPaginas > 0 ? Math.round(pctInicial * _pdfPaginas / 100) : null);
+
   document.getElementById('pdf-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   if (_pdfTimer) clearInterval(_pdfTimer);
   _pdfTimer = setInterval(function() {
-    if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+    if (_pdfAtual) {
+      var lbl = _pdfPaginas > 0
+        ? 'Pág. ' + Math.round(_pdfPct * _pdfPaginas / 100) + '/' + _pdfPaginas
+        : Math.round(_pdfPct) + '%';
+      salvarProgresso(_pdfAtual.arquivo, _pdfPct, lbl);
+    }
   }, 20000);
 }
 
@@ -1149,27 +1162,60 @@ function fecharPDF() {
   render('livros');
 }
 
-function atualizarBarraPDF(pct) {
+function atualizarBarraPDF(pct, pagAtual) {
   _pdfPct = Math.max(0, Math.min(100, pct));
   document.getElementById('pdf-progress-bar').style.width = _pdfPct + '%';
-  document.getElementById('pdf-pag-label').textContent = Math.round(_pdfPct) + '% lido';
+  if (_pdfPaginas > 0) {
+    var pag = pagAtual !== undefined && pagAtual !== null
+      ? pagAtual
+      : Math.round(_pdfPct * _pdfPaginas / 100);
+    pag = Math.max(1, Math.min(_pdfPaginas, pag));
+    document.getElementById('pdf-pag-label').textContent =
+      'Pág. ' + pag + ' / ' + _pdfPaginas + ' (' + Math.round(_pdfPct) + '%)';
+  } else {
+    document.getElementById('pdf-pag-label').textContent = Math.round(_pdfPct) + '% lido';
+  }
 }
 
 function setPdfProgress(e) {
   var pct = (e.offsetX / e.currentTarget.offsetWidth) * 100;
-  atualizarBarraPDF(pct);
-  if (_pdfAtual) salvarProgresso(_pdfAtual.arquivo, _pdfPct, Math.round(_pdfPct) + '%');
+  atualizarBarraPDF(pct, null);
+  if (_pdfAtual) {
+    var lbl = _pdfPaginas > 0
+      ? 'Pág. ' + Math.round(_pdfPct * _pdfPaginas / 100) + '/' + _pdfPaginas
+      : Math.round(_pdfPct) + '%';
+    salvarProgresso(_pdfAtual.arquivo, _pdfPct, lbl);
+  }
 }
 
 function salvarMarcador() {
   if (!_pdfAtual) return;
-  var entrada = prompt('Marcar em que % você está? (0-100)', Math.round(_pdfPct));
-  if (entrada === null) return;
-  var pct = Math.max(0, Math.min(100, parseFloat(entrada) || 0));
-  atualizarBarraPDF(pct);
-  salvarProgresso(_pdfAtual.arquivo, pct, pct + '%');
-  document.getElementById('pdf-info').textContent = '✅ Salvo em ' + pct + '%';
-  setTimeout(function() { document.getElementById('pdf-info').textContent = _pdfAtual.autor || ''; }, 2000);
+
+  var pct, lbl;
+
+  if (_pdfPaginas > 0) {
+    var pagAtual = Math.max(1, Math.round(_pdfPct * _pdfPaginas / 100));
+    var entrada = prompt('Em qual pagina voce esta? (Total: ' + _pdfPaginas + ' paginas)', pagAtual);
+    if (entrada === null) return;
+    var pag = Math.max(1, Math.min(_pdfPaginas, parseInt(entrada) || pagAtual));
+    pct = (pag / _pdfPaginas) * 100;
+    lbl = 'Pág. ' + pag + '/' + _pdfPaginas;
+    atualizarBarraPDF(pct, pag);
+  } else {
+    // Sem total — pergunta % direto
+    var entradaPct = prompt('Em que % você está? (0-100)', Math.round(_pdfPct));
+    if (entradaPct === null) return;
+    pct = Math.max(0, Math.min(100, parseFloat(entradaPct) || 0));
+    lbl = Math.round(pct) + '%';
+    atualizarBarraPDF(pct, null);
+  }
+
+  salvarProgresso(_pdfAtual.arquivo, pct, lbl);
+
+  var infoEl = document.getElementById('pdf-info');
+  var infoOrig = infoEl.textContent;
+  infoEl.textContent = '✅ Marcador salvo — ' + lbl;
+  setTimeout(function() { infoEl.textContent = infoOrig; }, 2500);
 }
 
 // ══ PROGRESSO AUDIOBOOK ══

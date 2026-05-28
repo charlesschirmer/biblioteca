@@ -66,6 +66,18 @@ def formatar_titulo(nome_arquivo):
     return stem.title()
 
 
+def contar_paginas(pdf_path: Path) -> int:
+    """Retorna o número de páginas do PDF."""
+    try:
+        import fitz
+        doc = fitz.open(str(pdf_path))
+        n = doc.page_count
+        doc.close()
+        return n
+    except Exception:
+        return 0
+
+
 def extrair_capa(pdf_path: Path, pasta_capas: Path, recriar=False) -> str:
     """
     Renderiza a 1ª página do PDF como JPG e salva em pasta_capas/.
